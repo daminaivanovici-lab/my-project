@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html,body { width:1280px; height:720px; overflow:hidden; background:#05060f; }
+  :root{
+    --cyan:#22e3ff; --mag:#ff3ea5; --gold:#ffd447; --ink:#eaf2ff;
+    --font:"Arial Black","Liberation Sans","DejaVu Sans",sans-serif;
+  }
+  #stage{ position:relative; width:1280px; height:720px; font-family:var(--font);
+    color:var(--ink); overflow:hidden;
+    background:
+      radial-gradient(800px 540px at 20% 15%, rgba(34,227,255,.18), transparent 60%),
+      radial-gradient(680px 600px at 85% 85%, rgba(255,62,165,.18), transparent 60%),
+      linear-gradient(160deg,#070a1a 0%, #0b0f24 45%, #0a0716 100%);
+  }
+  .blob{ position:absolute; border-radius:50%; filter:blur(48px); opacity:.5; mix-blend-mode:screen; }
+  .b1{ width:360px;height:360px; background:#1560ff; left:-90px; top:-60px;}
+  .b2{ width:320px;height:320px; background:#ff3ea5; right:-70px; bottom:-90px;}
+  .b3{ width:240px;height:240px; background:#22e3ff; right:30%; top:-100px;}
+  #stage::before{content:"";position:absolute;inset:0;
+    background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),
+                     linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);
+    background-size:44px 44px; mask:radial-gradient(120% 120% at 50% 40%,#000 40%,transparent 85%);}
+
+  .wordmark{position:absolute; top:26px; left:38px; font-size:20px; letter-spacing:4px;
+    color:#9fb4d6; text-transform:uppercase; z-index:5;}
+  .wordmark b{color:var(--cyan);}
+  .pips{position:absolute; top:28px; right:38px; display:flex; gap:11px; align-items:center; z-index:5;}
+  .pip{width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.15);
+    border:2px solid rgba(255,255,255,.25); transition:none;}
+  .pip.on{background:var(--gold); border-color:#fff; box-shadow:0 0 16px var(--gold); transform:scale(1.25);}
+
+  #bar{position:absolute; left:0; bottom:0; height:6px; width:0%;
+    background:linear-gradient(90deg,var(--cyan),var(--mag)); box-shadow:0 0 14px var(--cyan); z-index:5;}
+
+  #caption{position:absolute; left:50%; bottom:48px; transform:translateX(-50%);
+    max-width:1040px; text-align:center; font-family:"Liberation Sans",sans-serif;
+    font-weight:800; font-size:24px; line-height:1.25; color:#fff;
+    text-shadow:0 2px 12px rgba(0,0,0,.85); padding:0 16px; opacity:0; z-index:5;}
+  #caption .hl{color:var(--gold);}
+
+  .scene{position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+    opacity:0; visibility:hidden; will-change:opacity;}
+
+  .center{ text-align:center; }
+  .kicker{font-size:26px; letter-spacing:6px; color:var(--cyan); text-transform:uppercase;}
+  .huge{font-size:168px; line-height:.95; letter-spacing:3px;
+    background:linear-gradient(180deg,#fff,#9fd8ff 55%,#22e3ff);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 40px rgba(34,227,255,.35);}
+  .sub{font-size:38px; letter-spacing:4px; color:#eaf2ff; margin-top:6px; text-transform:uppercase;}
+  .sub b{color:var(--mag);}
+  .year{display:inline-block; margin-top:18px; padding:8px 20px; border-radius:999px;
+    font-size:24px; letter-spacing:6px; color:#05060f; background:var(--gold);
+    box-shadow:0 0 26px rgba(255,212,71,.5);}
+  .flash{font-size:80px; color:#fff; letter-spacing:1px; text-shadow:0 0 26px var(--mag);}
+
+  .rank{display:grid; grid-template-columns:520px 1fr; gap:44px; width:1120px; align-items:center;}
+  .rleft{position:relative; display:flex; align-items:center; gap:22px;}
+  .rnum{font-size:290px; line-height:.8; letter-spacing:-8px;
+    background:linear-gradient(180deg,#fff, var(--cyan));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+    text-shadow:0 0 46px rgba(34,227,255,.35); transform-origin:center;}
+  .rmeta{display:flex; flex-direction:column; gap:14px;}
+  .rname{font-size:62px; line-height:1; text-transform:uppercase; letter-spacing:1px;
+    text-shadow:0 3px 16px rgba(0,0,0,.6);}
+  .rid{font-family:"Liberation Sans",sans-serif; font-weight:700; font-size:21px; color:#a9bcdd; max-width:430px;}
+  .chip{align-self:flex-start; display:inline-flex; align-items:baseline; gap:9px;
+    padding:10px 18px; border-radius:12px; background:rgba(34,227,255,.12);
+    border:1px solid rgba(34,227,255,.4); box-shadow:0 0 20px rgba(34,227,255,.15);}
+  .chip .n{font-size:38px; color:var(--gold); letter-spacing:1px;}
+  .chip .l{font-family:"Liberation Sans",sans-serif; font-weight:700; font-size:19px; color:#cfe0ff; text-transform:uppercase; letter-spacing:1px;}
+
+  .clip{position:relative; aspect-ratio:16/9; width:100%; border-radius:16px;
+    background:linear-gradient(145deg,rgba(255,255,255,.06),rgba(255,255,255,.02));
+    border:3px dashed rgba(255,255,255,.28); display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:11px; overflow:hidden;}
+  .play{width:78px;height:78px;border-radius:50%;
+    background:rgba(255,255,255,.12); border:3px solid rgba(255,255,255,.5);
+    display:flex; align-items:center; justify-content:center;}
+  .play::before{content:""; border-left:30px solid #fff; border-top:19px solid transparent;
+    border-bottom:19px solid transparent; margin-left:7px;}
+  .clip .lbl{font-family:"Liberation Sans",sans-serif; font-weight:800; font-size:21px; color:#dfe9ff; letter-spacing:1px;}
+  .clip .q{font-family:"Liberation Sans",sans-serif; font-weight:600; font-size:15px; color:#8fa6cc;}
+  .badge{position:absolute; top:13px; left:13px; padding:5px 11px; border-radius:6px;
+    background:var(--mag); color:#fff; font-family:"Liberation Sans",sans-serif;
+    font-weight:800; font-size:15px; letter-spacing:1px;}
+
+  .scene.gold .rnum{background:linear-gradient(180deg,#fff,var(--gold)); -webkit-background-clip:text; background-clip:text;
+    text-shadow:0 0 60px rgba(255,212,71,.5);}
+  .scene.gold .chip{background:rgba(255,212,71,.14); border-color:rgba(255,212,71,.5);}
+  .scene.gold .clip{border-color:rgba(255,212,71,.5);}
+
+  .recap{display:flex; gap:18px; margin-top:30px; justify-content:center;}
+  .rc{padding:14px 18px; border-radius:12px; background:rgba(255,255,255,.06);
+    border:1px solid rgba(255,255,255,.14); text-align:center; min-width:132px;}
+  .rc .p{font-size:28px; color:var(--cyan);}
+  .rc .nm{font-family:"Liberation Sans",sans-serif; font-weight:800; font-size:18px; margin-top:4px;}
+  .cta{margin-top:38px; font-size:32px; letter-spacing:2px; color:#fff;}
+  .cta b{color:var(--mag);}
+</style>
+</head>
+<body>
+<div id="stage">
+  <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
+  <div class="wordmark">TOP&nbsp;5 <b>STREAMERS</b></div>
+  <div class="pips">
+    <span class="pip" data-r="5"></span><span class="pip" data-r="4"></span>
+    <span class="pip" data-r="3"></span><span class="pip" data-r="2"></span>
+    <span class="pip" data-r="1"></span>
+  </div>
+
+  <section class="scene center" data-id="cold"><div>
+    <div class="flash">1,000,000+ LIVE VIEWERS</div>
+    <div class="sub" style="margin-top:18px">…and he's <b>NOT</b> number one</div>
+  </div></section>
+
+  <section class="scene center" data-id="intro"><div>
+    <div class="kicker">Ranked by size on YouTube</div>
+    <div class="huge">TOP 5</div>
+    <div class="sub">Biggest YouTube <b>Streamers</b></div>
+    <div class="year">2026</div>
+  </div></section>
+
+  <div id="ranks"></div>
+
+  <section class="scene center" data-id="outro"><div class="center">
+    <div class="kicker">That's your top 5</div>
+    <div class="huge" style="font-size:108px">WHO'S MISSING?</div>
+    <div class="recap">
+      <div class="rc"><div class="p">#5</div><div class="nm">TimTheTatman</div></div>
+      <div class="rc"><div class="p">#4</div><div class="nm">Ludwig</div></div>
+      <div class="rc"><div class="p">#3</div><div class="nm">MrBeast</div></div>
+      <div class="rc"><div class="p">#2</div><div class="nm">Kai Cenat</div></div>
+      <div class="rc"><div class="p">#1</div><div class="nm">IShowSpeed</div></div>
+    </div>
+    <div class="cta">👍 LIKE &nbsp;•&nbsp; <b>SUBSCRIBE</b> &nbsp;•&nbsp; Comment your #1</div>
+  </div></section>
+
+  <div id="caption"></div>
+  <div id="bar"></div>
+</div>
+
+<script>
+const RANKS = [
+  { r:5, name:"TimTheTatman", id:"Turned raging at video games into a full-time YouTube empire.",
+    stat:4, unit:"M+", label:"Subscribers", query:'TimTheTatman funny rage moment 2026',
+    cap:'#5 — <span class="hl">TimTheTatman.</span> Consistency in a headset.' },
+  { r:4, name:"Ludwig", id:"The mind behind record-breaking subathons and huge live events.",
+    stat:6, unit:"M+", label:"Subscribers", query:'Ludwig subathon record moment',
+    cap:'#4 — <span class="hl">Ludwig.</span> He doesn\'t just stream — he produces.' },
+  { r:3, name:"MrBeast", id:"The most-subscribed creator alive. When he goes live, numbers get absurd.",
+    stat:400, unit:"M+", label:"Subscribers", query:'MrBeast live event crowd 2026',
+    cap:'#3 — <span class="hl">MrBeast.</span> Nobody touches this scale on YouTube.' },
+  { r:2, name:"Kai Cenat", id:"The king of chaos — his 2026 comeback broke over a million live viewers.",
+    stat:1, unit:"M+", label:"Live viewers", query:'Kai Cenat comeback stream 1 million viewers',
+    cap:'#2 — <span class="hl">Kai Cenat.</span> He turned streaming into a cultural event.' },
+  { r:1, name:"IShowSpeed", id:"Streamer of the Year and the most-watched creator in YouTube gaming.",
+    stat:54, unit:"M+", label:"Subscribers", query:'IShowSpeed insane reaction 2026',
+    cap:'#1 — <span class="hl">IShowSpeed.</span> It\'s not even close.' },
+];
+
+const ranksEl = document.getElementById('ranks');
+RANKS.forEach(d=>{
+  const s=document.createElement('section');
+  s.className='scene'+(d.r===1?' gold':'');
+  s.dataset.id='r'+d.r;
+  s.innerHTML=`<div class="rank">
+      <div class="rleft"><div class="rnum">${d.r}</div>
+        <div class="rmeta">
+          <div class="rname">${d.name}</div>
+          <div class="rid">${d.id}</div>
+          <div class="chip"><span class="n" data-target="${d.stat}">0</span><span class="l">${d.unit} ${d.label}</span></div>
+        </div>
+      </div>
+      <div class="clip"><div class="badge">CLIP #${d.r}</div><div class="play"></div>
+        <div class="lbl">DROP FOOTAGE HERE</div><div class="q">search: "${d.query}"</div>
+      </div>
+    </div>`;
+  ranksEl.appendChild(s);
+});
+
+const T=[
+  {id:'cold',  start:0,    dur:3.2, cap:'One of these streamers pulled a MILLION live viewers…'},
+  {id:'intro', start:3.2,  dur:3.0, cap:'The 5 biggest YouTube streamers right now.'},
+  {id:'r5', start:6.2,  dur:12.5, rank:5},
+  {id:'r4', start:18.7, dur:12.5, rank:4},
+  {id:'r3', start:31.2, dur:13.5, rank:3},
+  {id:'r2', start:44.7, dur:14.5, rank:2},
+  {id:'r1', start:59.2, dur:16.5, rank:1},
+  {id:'outro', start:75.7, dur:8.0, cap:'Drop YOUR top 5 in the comments. Subscribe for more.'},
+];
+const TOTAL=83.7;
+RANKS.forEach(d=>{ const t=T.find(x=>x.rank===d.r); if(t) t.cap=d.cap; });
+
+const scenes={}; document.querySelectorAll('.scene').forEach(s=>scenes[s.dataset.id]=s);
+T.forEach(seg=>{ const s=scenes[seg.id]; seg.el=s; seg.wrap=s.children[0];
+  seg.rnum=s.querySelector('.rnum'); seg.cnt=s.querySelector('.chip .n'); });
+
+const bar=document.getElementById('bar');
+const cap=document.getElementById('caption');
+const pips=[...document.querySelectorAll('.pip')];
+
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const eOutCubic=p=>1-Math.pow(1-p,3);
+const eOutBack=p=>{const c=1.9;return 1+ (c+1)*Math.pow(p-1,3)+c*Math.pow(p-1,2);};
+
+window.renderAt=function(t){
+  bar.style.width=clamp(t/TOTAL,0,1)*100+'%';
+  let active=null;
+  for(const seg of T){
+    const lt=t-seg.start;
+    const vis=lt>=0 && lt<seg.dur;
+    const s=seg.el;
+    if(!vis){ s.style.opacity=0; s.style.visibility='hidden'; continue; }
+    active=seg;
+    s.style.visibility='visible';
+    const inDur=0.55, outDur=0.4;
+    let op=1;
+    if(lt<inDur) op=lt/inDur;
+    if(lt>seg.dur-outDur) op=clamp((seg.dur-lt)/outDur,0,1);
+    s.style.opacity=op;
+    const pin=eOutCubic(clamp(lt/inDur,0,1));
+    seg.wrap.style.transform=`translateY(${(1-pin)*30}px)`;
+    if(seg.rnum){
+      const sc=0.62+0.38*eOutBack(clamp(lt/0.65,0,1));
+      seg.rnum.style.transform=`scale(${sc})`;
+    }
+    if(seg.cnt){
+      const target=+seg.cnt.dataset.target;
+      const cp=eOutCubic(clamp((lt-0.15)/1.1,0,1));
+      seg.cnt.textContent=Math.round(target*cp);
+    }
+  }
+  if(active && active.cap){
+    cap.innerHTML=active.cap;
+    const lt=t-active.start;
+    cap.style.opacity=clamp((lt-0.12)/0.4,0,1)*clamp((active.dur-lt)/0.4,0,1);
+  } else cap.style.opacity=0;
+  pips.forEach(p=>{
+    const on=active && active.rank && Number(p.dataset.r)>=active.rank;
+    p.classList.toggle('on',!!on);
+  });
+};
+window.__ready=true;
+window.__total=TOTAL;
+renderAt(0);
+</script>
+</body>
+</html>
