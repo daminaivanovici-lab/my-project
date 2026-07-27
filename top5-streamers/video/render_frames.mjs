@@ -6,7 +6,10 @@ const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
 
 const DIR = path.dirname(fileURLToPath(import.meta.url));
-const framesDir = path.join(DIR, 'frames');
+const PAGE = process.env.PAGE || 'index.html';
+const W = Number(process.env.W || 1280);
+const H = Number(process.env.H || 720);
+const framesDir = path.join(DIR, process.env.FRAMES || 'frames');
 fs.rmSync(framesDir, { recursive: true, force: true });
 fs.mkdirSync(framesDir, { recursive: true });
 
@@ -14,8 +17,8 @@ const FPS = Number(process.env.FPS || 24);
 const MAXF = process.env.MAXF ? Number(process.env.MAXF) : null;
 
 const browser = await chromium.launch({ headless: true, args: ['--force-color-profile=srgb'] });
-const page = await browser.newPage({ viewport: { width: 1280, height: 720 }, deviceScaleFactor: 1 });
-await page.goto('file://' + path.join(DIR, 'index.html'));
+const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+await page.goto('file://' + path.join(DIR, PAGE));
 await page.waitForFunction('window.__ready === true');
 const total = await page.evaluate('window.__total');
 let N = Math.ceil(total * FPS);
